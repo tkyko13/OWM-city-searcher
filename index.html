@@ -42,17 +42,16 @@
       <v-app>
         <v-main>
           <v-container>
+            <h1>
+              <a href="https://home.openweathermap.org/">OpenWeatherMap</a
+              >の都市id検索ツール
+            </h1>
             <div>
               <v-text-field label="lon(経度)" v-model="lon"></v-text-field>
               <v-text-field label="lat(緯度)" v-model="lat"></v-text-field>
               <v-btn v-on:click="search">緯度経度から探す</v-btn>
               <v-btn v-on:click="searchGPS">現在地から取得</v-btn>
             </div>
-            <!-- <v-select v-model="selected" multiple>
-              <option v-for="n in nearList" :key="n.id">
-                id:{{n.id}} - {{n.name }},{{n.country}}
-              </option>
-            </v-select> -->
 
             <v-list three-line>
               <template v-for="(n, index) in nearList">
@@ -66,6 +65,7 @@
                 </v-list-item>
               </template>
             </v-list>
+            <v-btn href="city.list.json">全JSONを見る</v-btn>
           </v-container>
         </v-main>
         <p>ver. 05-Aug-2020</p>
@@ -80,8 +80,8 @@
         el: '#app',
         vuetify: new Vuetify(),
         data: {
-          lon: 0,
-          lat: 0,
+          lon: '',
+          lat: '',
           allList: [],
           selected: '',
           nearList: [],
