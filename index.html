@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css"
+      rel="stylesheet"
+    />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui"
+    />
+    <meta charset="UTF-8" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <div id="app">
+      <v-app>
+        <v-main>
+          <v-container>
+            <div>
+              <v-text-field label="lon(経度)" v-model="lon"></v-text-field>
+              <v-text-field label="lat(緯度)" v-model="lat"></v-text-field>
+              <v-btn v-on:click="search">緯度経度から探す</v-btn>
+              <v-btn v-on:click="searchGPS">現在地から取得</v-btn>
+            </div>
+            <!-- <v-select v-model="selected" multiple>
+              <option v-for="n in nearList" :key="n.id">
+                id:{{n.id}} - {{n.name }},{{n.country}}
+              </option>
+            </v-select> -->
+
+            <v-list three-line>
+              <template v-for="(n, index) in nearList">
+                <v-list-item :key="n.id">
+                  <v-list-item-content>
+                    <v-list-item-title
+                      >{{n.name}},{{n.country}}</v-list-item-title
+                    >
+                    <v-list-item-subtitle> id:{{n.id}} </v-list-item-subtitle>
+                  </v-list-item-content>
+                </v-list-item>
+              </template>
+            </v-list>
+          </v-container>
+        </v-main>
+        <p>ver. 05-Aug-2020</p>
+      </v-app>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <script>
+      const app = new Vue({
+        el: '#app',
+        vuetify: new Vuetify(),
+        data: {
+          lon: 0,
+          lat: 0,
+          allList: [],
+          selected: '',
+          nearList: [],
+        },
+        mounted: async function () {
+          const cityList = await axios.get('./city.list.json');
+          // console.log(cityList.data);
+          this.allList = cityList.data;
+        },
+        methods: {
+          search: function () {
+            function dist(x1, y1, x2, y2) {
+              return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            }
+            app.allList.sort((a, b) => {
+              return (
+                dist(a.coord.lon, a.coord.lat, app.lon, app.lat) -
+                dist(b.coord.lon, b.coord.lat, app.lon, app.lat)
+              );
+            });
+            app.nearList = app.allList.slice(0, 10);
+          },
+          searchGPS: function () {
+            navigator.geolocation.getCurrentPosition((pos) => {
+              app.lon = pos.coords.longitude;
+              app.lat = pos.coords.latitude;
+              app.search();
+            });
+          },
+        },
+      });
+    </script>
+  </body>
+</html>
