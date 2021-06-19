@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- vuetify -->
     <link
       href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900"
       rel="stylesheet"
@@ -17,6 +18,14 @@
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui"
     />
+
+    <!-- highlight.js -->
+    <link
+      rel="stylesheet"
+      href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/styles/vs.min.css"
+    />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.1/highlight.min.js"></script>
+
     <meta charset="UTF-8" />
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -43,32 +52,89 @@
         <v-main>
           <v-container>
             <h1>
-              <a href="https://home.openweathermap.org/">OpenWeatherMap</a
-              >の都市id検索ツール
+              <a href="https://home.openweathermap.org/">OpenWeatherMap</a>
+              API利用ツール
             </h1>
-            <div>
-              <v-text-field label="lon(経度)" v-model="lon"></v-text-field>
-              <v-text-field label="lat(緯度)" v-model="lat"></v-text-field>
-              <v-btn v-on:click="search">緯度経度から探す</v-btn>
-              <v-btn v-on:click="searchGPS">現在地から取得</v-btn>
-            </div>
 
-            <v-list three-line>
-              <template v-for="(n, index) in nearList">
-                <v-list-item :key="n.id">
-                  <v-list-item-content>
-                    <v-list-item-title
-                      >{{n.name}},{{n.country}}</v-list-item-title
-                    >
-                    <v-list-item-subtitle> id:{{n.id}} </v-list-item-subtitle>
-                  </v-list-item-content>
-                </v-list-item>
-              </template>
-            </v-list>
-            <v-btn href="city.list.json">全JSONを見る</v-btn>
+            <section>
+              <h2>Step1. APIキーの取得</h2>
+              <v-text-field
+                label="API key"
+                v-model="apikey"
+                @change="updUrl"
+              ></v-text-field>
+            </section>
+
+            <section>
+              <h2>Step2. 位置情報の入力</h2>
+              <v-row>
+                <v-col>
+                  <v-text-field
+                    label="lon(経度)"
+                    v-model="lon"
+                    @change="updUrl"
+                  ></v-text-field>
+                </v-col>
+                <v-col>
+                  <v-text-field
+                    label="lat(緯度)"
+                    v-model="lat"
+                    @change="updUrl"
+                  ></v-text-field>
+                </v-col>
+                <v-col>
+                  <v-btn v-on:click="searchGPS">現在地から設定</v-btn>
+                </v-col>
+              </v-row>
+              or
+              <v-row>
+                <v-col>
+                  <v-text-field
+                    label="city id"
+                    v-model="cityId"
+                    @change="updUrl"
+                  ></v-text-field>
+                </v-col>
+                <v-col>
+                  <a href="searchCityId.html">検索ツール</a>から探す
+                </v-col>
+              </v-row>
+            </section>
+
+            <section>
+              <h2>Step3. エンドポイントの選択</h2>
+              <v-row>
+                <v-col
+                  ><v-select
+                    v-model="selectedApi"
+                    label="end point"
+                    :items="endpoints"
+                    item-text="apiName"
+                    return-object
+                    @change="updUrl"
+                  ></v-select
+                ></v-col>
+                <v-col>
+                  docment:<a :href="selectedApi.docUrl"
+                    >{{selectedApi.docUrl}}</a
+                  >
+                </v-col>
+              </v-row>
+            </section>
+
+            <p>{{execUrl}}</p>
+            <v-btn v-on:click="onExec">API実行</v-btn>
+            <div>
+              <pre><code>{{responseJson}}</code></pre>
+            </div>
           </v-container>
         </v-main>
-        <p>ver. 05-Aug-2020</p>
+        <v-footer style="display: block; text-align: right">
+          <span
+            ><a href="https://github.com/tkyko13/OWM-city-searcher">GitHub</a> ©
+            2021 <a href="https://tkyk.net">tkyk.net</a>
+          </span>
+        </v-footer>
       </v-app>
     </div>
 
@@ -80,16 +146,64 @@
         el: '#app',
         vuetify: new Vuetify(),
         data: {
+          apikey: '',
           lon: '',
           lat: '',
-          allList: [],
-          selected: '',
-          nearList: [],
+          cityId: '',
+          apiBaseUrl: 'https://api.openweathermap.org/data/2.5',
+          endpoints: [
+            {
+              apiName: 'Current Weather Data',
+              endPoint: '/weather',
+              docUrl: 'https://openweathermap.org/current',
+            },
+            {
+              apiName: 'Hourly Forecast 4 days',
+              endPoint: '/forecast/hourly',
+              docUrl: 'https://openweathermap.org/api/hourly-forecast',
+            },
+            {
+              apiName: 'One Call API',
+              endPoint: '/weather',
+              docUrl: 'https://openweathermap.org/api/one-call-api',
+            },
+            {
+              apiName: 'ODaily Forecast 16 Days',
+              endPoint: '/forecast/daily',
+              docUrl: 'https://openweathermap.org/forecast16',
+            },
+            {
+              apiName: 'Climate forecast for 30 days',
+              endPoint: '/forecast/climate',
+              docUrl: 'https://openweathermap.org/api/forecast30',
+            },
+            {
+              apiName: 'Solar Radiation API',
+              endPoint: '/solar_radiation',
+              docUrl: 'https://openweathermap.org/api/solar-radiation',
+            },
+            {
+              apiName: '5 day weather forecast',
+              endPoint: '/forecast',
+              docUrl: 'https://openweathermap.org/forecast5',
+            },
+          ],
+          selectedApi: {},
+          execUrl: '',
+          responseJson: '',
         },
         mounted: async function () {
-          const cityList = await axios.get('./city.list.json');
-          // console.log(cityList.data);
-          this.allList = cityList.data;
+          // const cityList = await axios.get('./city.list.json');
+          // this.allList = cityList.data;
+          // hljs.initHighlightingOnLoad();
+
+          if (localStorage.apikey) this.apikey = localStorage.apikey;
+          if (localStorage.lon) this.log = localStorage.lon;
+          if (localStorage.lat) this.lat = localStorage.lat;
+          if (localStorage.cityId) this.cityId = localStorage.cityId;
+          if (localStorage.selectedApi)
+            this.selectedApi = JSON.parse(localStorage.selectedApi);
+          if (localStorage.execUrl) this.execUrl = localStorage.execUrl;
         },
         methods: {
           search: function () {
@@ -108,7 +222,30 @@
             navigator.geolocation.getCurrentPosition((pos) => {
               app.lon = pos.coords.longitude;
               app.lat = pos.coords.latitude;
-              app.search();
+              // app.search();
+
+              app.updUrl();
+            });
+          },
+          updUrl() {
+            app.execUrl = app.apiBaseUrl + app.selectedApi.endPoint;
+            if (app.cityId) {
+              app.execUrl += '?id=' + app.cityId;
+            } else {
+              app.execUrl += '?lat=' + app.lat + '&lon=' + app.lon;
+            }
+            app.execUrl += '&appid=' + app.apikey;
+
+            localStorage.apikey = app.apikey;
+            localStorage.log = app.lon;
+            localStorage.lat = app.lat;
+            localStorage.cityId = app.cityId;
+            localStorage.selectedApi = JSON.stringify(app.selectedApi);
+            localStorage.execUrl = app.execUrl;
+          },
+          onExec() {
+            axios.get(app.execUrl).then((res) => {
+              app.responseJson = res.data;
             });
           },
         },
